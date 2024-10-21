@@ -14,7 +14,9 @@
 namespace py = pybind11;
 using namespace py::literals;
 
-bool runPyPassOn(LLVMModuleRef M) {
+PYBIND11_MAKE_OPAQUE(LLVMOpaqueModule);
+
+bool runPyPassOn(LLVMModuleRef Mod) {
   char cwd[PATH_MAX];
   if (!getcwd(cwd, sizeof(cwd))) {
     fprintf(stderr, "Failed to run out-of-tree pass: Cannot obtain current working directory\n");
@@ -43,9 +45,16 @@ bool runPyPassOn(LLVMModuleRef M) {
     auto llvmlite_version = py::cast<std::string>(llvmlite.attr("__version__"));
     fprintf(stderr, "  llvmlite version: %s\n", llvmlite_version.c_str());
 
-    py::exec(script);
-  } catch (...) {
-    exit(1);
+    fprintf(stderr, "Module: %p\n", Mod);
+    // error: incomplete type 'LLVMOpaqueModule' used in type trait expression
+    // llvm-project/llvm/include/llvm-c/Types.h:61:16: note: forward declaration of 'LLVMOpaqueModule'
+    // typedef struct LLVMOpaqueModule *LLVMModuleRef;
+    //                ^
+    auto locals = py::dict("mod"_a=Mod);
+    py::exec(script, py::globals(), locals);
+  }
+  catch (...) {
+    std::abort();
   }
 
   return true;
