@@ -1,5 +1,8 @@
 #include <pybind11/embed.h>
 
+#include <llvm-c/Core.h>
+#include <llvm-c/Types.h>
+
 #include <cstdlib>
 #include <fstream>
 #include <sstream>
@@ -9,19 +12,20 @@
 #include <limits.h>
 
 namespace py = pybind11;
+using namespace py::literals;
 
-void run() {
+bool runPyPassOn(LLVMModuleRef M) {
   char cwd[PATH_MAX];
   if (!getcwd(cwd, sizeof(cwd))) {
     fprintf(stderr, "Failed to run out-of-tree pass: Cannot obtain current working directory\n");
-    return;
+    return false;
   }
 
   auto pass_script = std::string(cwd) + "/pass.py";
   std::ifstream file(pass_script);
   if (!file) {
     fprintf(stderr, "Failed to run out-of-tree pass: Cannot find script file %s\n", pass_script.c_str());
-    return;
+    return false;
   }
 
   std::stringstream buffer;
@@ -43,4 +47,6 @@ void run() {
   } catch (...) {
     exit(1);
   }
+
+  return true;
 }
