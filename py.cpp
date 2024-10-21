@@ -14,7 +14,7 @@
 namespace py = pybind11;
 using namespace py::literals;
 
-bool runPyPassOn(LLVMModuleRef M) {
+bool runPyPassOn(LLVMModuleRef Mod) {
   char cwd[PATH_MAX];
   if (!getcwd(cwd, sizeof(cwd))) {
     fprintf(stderr, "Failed to run out-of-tree pass: Cannot obtain current working directory\n");
@@ -43,9 +43,15 @@ bool runPyPassOn(LLVMModuleRef M) {
     auto llvmlite_version = py::cast<std::string>(llvmlite.attr("__version__"));
     fprintf(stderr, "  llvmlite version: %s\n", llvmlite_version.c_str());
 
-    py::exec(script);
-  } catch (...) {
-    exit(1);
+    // Hello World
+    // have mod
+    // <capsule object NULL at 0x10c14bc00>
+    // argument 1: TypeError: expected LP_LLVMModule instance instead of PyCapsule
+    auto locals = py::dict("mod"_a=(void *)Mod);
+    py::exec(script, py::globals(), locals);
+  }
+  catch (...) {
+    std::abort();
   }
 
   return true;
