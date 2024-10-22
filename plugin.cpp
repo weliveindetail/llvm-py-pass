@@ -12,7 +12,7 @@
 
 using namespace llvm;
 
-extern bool runPyPassOn(LLVMModuleRef);
+extern bool runPyPassOn(LLVMModuleRef, LLVMContextRef);
 
 namespace {
 
@@ -20,8 +20,10 @@ static std::once_flag register_once;
 
 struct PyPass : PassInfoMixin<PyPass> {
   PreservedAnalyses run(Module &M, ModuleAnalysisManager &) {
-    LLVMModuleRef MR = wrap(&M);
-    return runPyPassOn(MR) ? PreservedAnalyses::none() : PreservedAnalyses::all();
+    LLVMModuleRef Mod = wrap(&M);
+    LLVMContextRef Ctx = wrap(&M.getContext());
+    return runPyPassOn(Mod, Ctx) ? PreservedAnalyses::none()
+                                 : PreservedAnalyses::all();
   }
 
   static PassPluginLibraryInfo pluginInfo() {
